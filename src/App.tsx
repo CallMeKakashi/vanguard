@@ -19,6 +19,7 @@ import {
     Gamepad2,
     History, LayoutDashboard,
     Library,
+    Notebook,
     RefreshCw,
     Search,
     Sparkles,
@@ -29,6 +30,9 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AchievementsList from './components/AchievementsList';
+import MissionLogDrawer from './components/MissionLogDrawer';
+import SquadronWidget from './components/SquadronWidget';
+import { useSound } from './hooks/useSound';
 
 const API_BASE = '/api';
 const STEAM_ID = import.meta.env.VITE_STEAM_ID || '';
@@ -160,6 +164,10 @@ const RootComponent = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [masteredAppIds, setMasteredAppIds] = useState<number[]>([]);
+    const [isMissionLogOpen, setIsMissionLogOpen] = useState(false);
+    const [missionLogGame, setMissionLogGame] = useState<{ id: number; name: string } | null>(null);
+
+    const { playHover, playClick, toggleMute, isMuted } = useSound();
 
     const selectedGame = useMemo(() => {
         if (!selectedGameId) return null;
@@ -292,7 +300,7 @@ const RootComponent = () => {
     }
 
     return (
-        <div className="flex min-h-screen bg-[#020205] text-slate-200 font-sans selection:bg-indigo-500/30 overflow-hidden">
+        <div className="flex h-screen bg-[#020205] text-slate-200 font-sans selection:bg-indigo-500/30 overflow-hidden">
             {/* Sidebar */}
             <aside className="hidden lg:flex flex-col w-72 bg-[#050508]/80 backdrop-blur-3xl border-r border-white/5 relative z-50">
                 <div className="p-8">
@@ -314,7 +322,8 @@ const RootComponent = () => {
                         ].map(item => (
                             <button
                                 key={item.id}
-                                onClick={() => setActiveTab(item.id as any)}
+                                onClick={() => { playClick(); setActiveTab(item.id as any); }}
+                                onMouseEnter={playHover}
                                 className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all group relative ${activeTab === item.id ? 'bg-indigo-500/10 text-white font-bold border border-white/5' : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'}`}
                             >
                                 {activeTab === item.id && <motion.div layoutId="nav-glow" className="absolute inset-0 bg-indigo-500/10 blur-xl rounded-2xl" />}
@@ -326,7 +335,19 @@ const RootComponent = () => {
                     </nav>
                 </div>
 
-                <div className="mt-auto p-8 border-t border-white/5">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-white/5 hover:scrollbar-thumb-white/10">
+                    <SquadronWidget />
+                </div>
+
+                <div className="mt-auto p-8 border-t border-white/5 space-y-4">
+                    <button
+                        onClick={toggleMute}
+                        className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors border border-white/5"
+                    >
+                        <span>AUDIO FEEDBACK</span>
+                        <span className={isMuted ? 'text-slate-600' : 'text-indigo-400'}>{isMuted ? 'OFF' : 'ON'}</span>
+                    </button>
+
                     {profile && (
                         <div className="p-4 rounded-[1.5rem] bg-white/5 border border-white/5 flex items-center gap-4 group hover:bg-white/10 transition-colors">
                             <img src={profile.avatarfull} className="w-10 h-10 rounded-xl border border-white/10 shadow-lg" alt="User" />
@@ -341,6 +362,13 @@ const RootComponent = () => {
                     )}
                 </div>
             </aside>
+
+            <MissionLogDrawer
+                isOpen={isMissionLogOpen}
+                onClose={() => setIsMissionLogOpen(false)}
+                appId={missionLogGame?.id || null}
+                gameName={missionLogGame?.name || ''}
+            />
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col relative h-screen overflow-y-auto overflow-x-hidden">
@@ -462,6 +490,17 @@ const RootComponent = () => {
                                                                     <Clock className="w-3 h-3" />
                                                                     {formatTime(game.playtime_2weeks || 0)} Recent
                                                                 </div>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setMissionLogGame({ id: game.appid, name: game.name });
+                                                                        setIsMissionLogOpen(true);
+                                                                    }}
+                                                                    className="p-1 hover:bg-white/10 rounded-md text-slate-500 hover:text-white transition-colors"
+                                                                    title="Open Mission Log"
+                                                                >
+                                                                    <Notebook className="w-3.5 h-3.5" />
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </motion.div>
@@ -502,7 +541,8 @@ const RootComponent = () => {
                                                     )}
                                                     <div className="flex flex-col gap-3 mt-auto">
                                                         <button
-                                                            onClick={generateRandomGame}
+                                                            onClick={() => { playClick(); generateRandomGame(); }}
+                                                            onMouseEnter={playHover}
                                                             className="w-full py-4 rounded-[1.5rem] bg-indigo-500 text-white text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-400 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
                                                         >
                                                             <Dices className="w-4 h-4" />
@@ -599,6 +639,18 @@ const RootComponent = () => {
                                                     </div>
                                                 </div>
                                                 <div className="p-4 bg-white/5 border-t border-white/5">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setMissionLogGame({ id: game.appid, name: game.name });
+                                                                setIsMissionLogOpen(true);
+                                                            }}
+                                                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                                                        >
+                                                            <Notebook className="w-3 h-3" /> LOGS
+                                                        </button>
+                                                    </div>
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => {

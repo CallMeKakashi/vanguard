@@ -42,6 +42,33 @@ app.get('/api/recent/:steamid', async (req: any, res: any) => {
     }
 });
 
+app.get('/api/friends/:steamid', async (req: any, res: any) => {
+    try {
+        const { steamid } = req.params;
+
+        // 1. Get Friend List
+        const friendsResponse = await axios.get(`http://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key=${STEAM_API_KEY}&steamid=${steamid}&relationship=friend`);
+        const friendsList = friendsResponse.data.friendslist?.friends || [];
+
+        if (friendsList.length === 0) {
+            return res.json({ friends: [] });
+        }
+
+        // 2. Get Player Summaries for all friends
+        // Steam API limits to 100 IDs per call, so typically we'd batch, but for now we assume < 100 for simplicity or handle first 100
+        const friendSteamIds = friendsList.map((f: any) => f.steamid).slice(0, 100).join(',');
+        const summariesResponse = await axios.get(`http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${friendSteamIds}`);
+
+        const players = summariesResponse.data.response?.players || [];
+
+        // 3. Merge data (optional, but raw player summaries is usually enough for the UI)
+        res.json({ friends: players });
+    } catch (error: any) {
+        console.error('[API] Friend fetch failed:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/achievements/:steamid/:appid', async (req: any, res: any) => {
     try {
         const { steamid, appid } = req.params;
