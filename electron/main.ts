@@ -1,11 +1,8 @@
 import { app, BrowserWindow, Menu, shell, utilityProcess } from 'electron';
-import { createRequire } from 'module';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const require = createRequire(import.meta.url);
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Standard CJS __dirname is available because we changed the tsconfig module to CommonJS
+// and will force CommonJS via a package.json in dist-electron.
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -105,13 +102,15 @@ function createWindow() {
     // Pass the port to the renderer via additional arguments
     process.argv.push(`--api-port=${API_PORT}`);
 
-    const isDev = process.env.NODE_ENV === 'development';
-
+    const isDev = !app.isPackaged || process.env.NODE_ENV === 'development';
+    console.log(`[Main] Vanguard starting in ${isDev ? 'DEVELOPMENT' : 'PRODUCTION'} mode`);
     if (isDev) {
+        console.log('[Main] Loading interface from:', 'http://localhost:5180');
         mainWindow.loadURL('http://localhost:5180');
-        mainWindow.webContents.openDevTools();
     } else {
-        mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+        const prodPath = path.join(__dirname, '../dist/index.html');
+        console.log('[Main] Loading interface from:', prodPath);
+        mainWindow.loadFile(prodPath);
     }
 
     // Open external links in default browser

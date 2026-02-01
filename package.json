@@ -13,8 +13,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "server:compile": "tsc -p tsconfig.server.json",
-    "electron:compile": "tsc -p electron/tsconfig.json && npm run server:compile",
-    "electron:dev": "npm run electron:compile && concurrently -k \"cross-env BROWSER=none npm run dev -- --port 5180\" \"wait-on http://localhost:5180 && electron .\"",
+    "electron:compile": "tsc -p electron/tsconfig.json && tsc -p tsconfig.server.json && node -e \"const fs = require('fs'); if (!fs.existsSync('dist-electron')) fs.mkdirSync('dist-electron'); fs.writeFileSync('dist-electron/package.json', JSON.stringify({type:'commonjs'}))\"",
+    "electron:watch": "nodemon --watch electron --watch server.ts --ext ts --exec \"npm run electron:compile && wait-on http://localhost:5180 && electron .\"",
+    "electron:dev": "cross-env NODE_ENV=development concurrently \"npm run server\" \"npm run dev\" \"npm run electron:watch\"",
     "electron:build": "npm run electron:compile && vite build && electron-builder"
   },
   "build": {
@@ -101,6 +102,7 @@
     "electron-builder": "^26.7.0",
     "electron-squirrel-startup": "^1.0.1",
     "lucide-react": "^0.563.0",
+    "nodemon": "^3.1.11",
     "postcss": "^8.5.6",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",

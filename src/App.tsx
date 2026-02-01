@@ -495,7 +495,7 @@ const RootComponent = () => {
                                                             <div className="w-32 h-16 rounded-xl overflow-hidden shadow-lg relative group">
                                                                 <div className="absolute inset-0 bg-indigo-500/20 mix-blend-overlay opacity-0 group-hover:opacity-100 transition-opacity" />
                                                                 <img
-                                                                    src={game.appid === 480 ? 'https://i9.ytimg.com/vi/0zgcBTeKOSM/mqdefault.jpg?v=67dea7c8&sqp=COzs-8sG&rs=AOn4CLD7MxKxC0H8ad8sQ6p5_clg8II44Q' : `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`}
+                                                                    src={game.appid === 480 ? 'https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg' : `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`}
                                                                     className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-700"
                                                                     alt={game.name}
                                                                 />
@@ -650,7 +650,7 @@ const RootComponent = () => {
                                                         alt={game.name}
                                                         onError={(e) => {
                                                             const target = e.target as HTMLImageElement;
-                                                            target.src = game.appid === 480 ? 'https://i9.ytimg.com/vi/0zgcBTeKOSM/mqdefault.jpg?v=67dea7c8&sqp=COzs-8sG&rs=AOn4CLD7MxKxC0H8ad8sQ6p5_clg8II44Q' : `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
+                                                            target.src = game.appid === 480 ? 'https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg' : `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
                                                         }}
                                                     />
                                                     {isMastered(game) && (
@@ -786,12 +786,12 @@ const RootComponent = () => {
                                             >
                                                 <div className="absolute inset-0 z-0">
                                                     <img
-                                                        src={game.appid === 480 ? 'https://i9.ytimg.com/vi/0zgcBTeKOSM/mqdefault.jpg?v=67dea7c8&sqp=COzs-8sG&rs=AOn4CLD7MxKxC0H8ad8sQ6p5_clg8II44Q' : `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/library_hero.jpg`}
+                                                        src={game.appid === 480 ? 'https://cdn.akamai.steamstatic.com/steam/apps/1245620/library_hero.jpg' : `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/library_hero.jpg`}
                                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                                         alt={game.name}
                                                         onError={(e) => {
                                                             const target = e.target as HTMLImageElement;
-                                                            target.src = game.appid === 480 ? 'https://i9.ytimg.com/vi/0zgcBTeKOSM/mqdefault.jpg?v=67dea7c8&sqp=COzs-8sG&rs=AOn4CLD7MxKxC0H8ad8sQ6p5_clg8II44Q' : `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
+                                                            target.src = game.appid === 480 ? 'https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg' : `https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
                                                         }}
                                                     />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-[#020205] via-[#020205]/40 to-transparent" />
