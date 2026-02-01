@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "3001:3001"
+    environment:
+      - VITE_STEAM_API_KEY=${VITE_STEAM_API_KEY}
+    restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: always
