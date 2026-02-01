@@ -16,7 +16,7 @@
     "electron:compile": "tsc -p electron/tsconfig.json && tsc -p tsconfig.server.json && node -e \"const fs = require('fs'); if (!fs.existsSync('dist-electron')) fs.mkdirSync('dist-electron'); fs.writeFileSync('dist-electron/package.json', JSON.stringify({type:'commonjs'}))\"",
     "electron:watch": "nodemon --watch electron --watch server.ts --ext ts --exec \"npm run electron:compile && wait-on http://localhost:5180 && electron .\"",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"npm run server\" \"npm run dev\" \"npm run electron:watch\"",
-    "electron:build": "npm run electron:compile && vite build && electron-builder"
+    "electron:build": "cross-env ELECTRON_BUILD_CACHE=./.electron-builder-cache npm run electron:compile && vite build && electron-builder"
   },
   "build": {
     "appId": "com.vanguard.app",
@@ -27,16 +27,12 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
-      "package.json"
+      "package.json",
+      "node_modules/**/*"
     ],
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
+        "portable",
         "zip"
       ],
       "icon": "public/icon.png",
@@ -69,47 +65,44 @@
     }
   },
   "dependencies": {
-    "@radix-ui/react-avatar": "^1.1.11",
-    "@radix-ui/react-slot": "^1.2.4",
-    "@tanstack/react-query": "^5.90.20",
-    "@tanstack/react-router": "^1.157.18",
-    "axios": "^1.6.0",
+    "@radix-ui/react-avatar": "^1.1.2",
+    "@radix-ui/react-slot": "^1.1.1",
+    "@tanstack/react-query": "^5.64.2",
+    "@tanstack/react-router": "^1.96.1",
+    "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
-    "cmdk": "^1.1.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "framer-motion": "^12.29.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^7.13.0",
-    "recharts": "^3.7.0",
+    "electron-squirrel-startup": "^1.0.1",
+    "express": "^4.21.2",
+    "framer-motion": "^11.18.1",
+    "lucide-react": "^0.474.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.0",
+    "tailwind-merge": "^2.6.0",
+    "tailwindcss": "^4.0.0",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.18",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node": "^25.1.0",
-    "@types/react": "^18.3.27",
-    "@types/react-dom": "^18.3.7",
-    "@vitejs/plugin-react": "^4.2.0",
-    "autoprefixer": "^10.4.24",
-    "clsx": "^2.1.1",
-    "concurrently": "^8.2.2",
-    "cross-env": "^10.1.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.17.16",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
     "electron": "^40.1.0",
     "electron-builder": "^26.7.0",
-    "electron-squirrel-startup": "^1.0.1",
-    "lucide-react": "^0.563.0",
-    "nodemon": "^3.1.11",
-    "postcss": "^8.5.6",
-    "tailwind-merge": "^3.4.0",
-    "tailwindcss": "^4.1.18",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vite": "^5.0.0",
+    "nodemon": "^3.1.9",
+    "postcss": "^8.5.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11",
     "wait-on": "^9.0.3"
   }
 }

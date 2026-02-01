@@ -1,20 +1,36 @@
 import axios from 'axios';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import express from 'express';
-
-dotenv.config();
 
 const app = express();
 // Priority: Argument > Env > Default 3001
 const argPort = process.argv.find(arg => arg.startsWith('--port='))?.split('=')[1];
 const PORT = argPort || process.env.PORT || 3001;
-const STEAM_API_KEY = process.env.VITE_STEAM_API_KEY;
+let STEAM_API_KEY = '';
 
 app.use(cors());
 app.use(express.json());
 
-app.get('/api/profile/:steamid', async (req: any, res: any) => {
+// Endpoint to update configuration dynamically
+app.post('/api/config', (req: any, res: any) => {
+    const { apiKey } = req.body;
+    if (!apiKey) {
+        return res.status(400).json({ error: 'API Key is required' });
+    }
+    STEAM_API_KEY = apiKey;
+    console.log('[API] Steam API Key updated');
+    res.json({ success: true });
+});
+
+// Middleware to check for API Key
+const checkApiKey = (req: any, res: any, next: any) => {
+    if (!STEAM_API_KEY) {
+        return res.status(401).json({ error: 'Steam API Key not configured' });
+    }
+    next();
+};
+
+app.get('/api/profile/:steamid', checkApiKey, async (req: any, res: any) => {
     try {
         const { steamid } = req.params;
         const response = await axios.get(`http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${steamid}`);
@@ -24,7 +40,7 @@ app.get('/api/profile/:steamid', async (req: any, res: any) => {
     }
 });
 
-app.get('/api/games/:steamid', async (req: any, res: any) => {
+app.get('/api/games/:steamid', checkApiKey, async (req: any, res: any) => {
     try {
         const { steamid } = req.params;
         const response = await axios.get(`http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamid}&include_appinfo=true&include_played_free_games=true`);
@@ -34,7 +50,7 @@ app.get('/api/games/:steamid', async (req: any, res: any) => {
     }
 });
 
-app.get('/api/recent/:steamid', async (req: any, res: any) => {
+app.get('/api/recent/:steamid', checkApiKey, async (req: any, res: any) => {
     try {
         const { steamid } = req.params;
         const response = await axios.get(`http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamid}`);
@@ -44,7 +60,7 @@ app.get('/api/recent/:steamid', async (req: any, res: any) => {
     }
 });
 
-app.get('/api/friends/:steamid', async (req: any, res: any) => {
+app.get('/api/friends/:steamid', checkApiKey, async (req: any, res: any) => {
     try {
         const { steamid } = req.params;
 
@@ -71,7 +87,7 @@ app.get('/api/friends/:steamid', async (req: any, res: any) => {
     }
 });
 
-app.get('/api/achievements/:steamid/:appid', async (req: any, res: any) => {
+app.get('/api/achievements/:steamid/:appid', checkApiKey, async (req: any, res: any) => {
     try {
         const { steamid, appid } = req.params;
         console.log(`[API] Fetching achievements for AppID: ${appid}, SteamID: ${steamid}`);

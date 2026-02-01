@@ -15,14 +15,26 @@ const API_PORT = '3001'; // We can make this dynamic later if needed
 
 function startServer() {
     const serverPath = path.join(__dirname, 'server.js');
-    console.log('[Main] Starting server at:', serverPath);
+    console.log('[Main] Initializing tactical server at:', serverPath);
 
     serverProcess = utilityProcess.fork(serverPath, [`--port=${API_PORT}`], {
         stdio: 'inherit'
     });
 
+    serverProcess.on('spawn', () => {
+        console.log(`[Main] Server process spawned successfully on port ${API_PORT}`);
+    });
+
+    serverProcess.on('error', (err: any) => {
+        console.error('[Main] Server process encountered a critical error:', err);
+    });
+
     serverProcess.on('exit', (code: number) => {
-        console.log(`[Main] Server process exited with code ${code}`);
+        if (code !== 0) {
+            console.error(`[Main] Server process crashed with exit code ${code}`);
+        } else {
+            console.log(`[Main] Server process terminated gracefully.`);
+        }
     });
 }
 
