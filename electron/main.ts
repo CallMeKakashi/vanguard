@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, utilityProcess } from 'electron';
+import { app, BrowserWindow, Menu, shell, utilityProcess } from 'electron';
 import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -27,6 +27,64 @@ function startServer() {
     serverProcess.on('exit', (code: number) => {
         console.log(`[Main] Server process exited with code ${code}`);
     });
+}
+
+function createMenu() {
+    const template: Electron.MenuItemConstructorOptions[] = [
+        {
+            label: 'Vanguard',
+            submenu: [
+                { role: 'about' },
+                { type: 'separator' },
+                { role: 'quit' }
+            ]
+        },
+        {
+            label: 'View',
+            submenu: [
+                { role: 'reload' },
+                { role: 'forceReload' },
+                { role: 'toggleDevTools' },
+                { type: 'separator' },
+                { role: 'resetZoom' },
+                { role: 'zoomIn' },
+                { role: 'zoomOut' },
+                { type: 'separator' },
+                { role: 'togglefullscreen' }
+            ]
+        },
+        {
+            label: 'Window',
+            submenu: [
+                { role: 'minimize' },
+                { role: 'zoom' },
+                ...(process.platform === 'darwin'
+                    ? [
+                        { type: 'separator' } as const,
+                        { role: 'front' } as const,
+                        { type: 'separator' } as const,
+                        { role: 'window' } as const
+                    ]
+                    : [
+                        { role: 'close' } as const
+                    ])
+            ]
+        },
+        {
+            role: 'help',
+            submenu: [
+                {
+                    label: 'Vanguard OS Intel',
+                    click: async () => {
+                        await shell.openExternal('https://github.com/CallMeKakashi/vanguard');
+                    }
+                }
+            ]
+        }
+    ];
+
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
 }
 
 function createWindow() {
@@ -71,6 +129,7 @@ function createWindow() {
 }
 
 app.on('ready', () => {
+    createMenu();
     startServer();
     createWindow();
 });

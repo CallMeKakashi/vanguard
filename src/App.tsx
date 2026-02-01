@@ -149,7 +149,7 @@ const RootComponent = () => {
     const vaultFilter = search.filter || 'all';
 
     const [blacklist, setBlacklist] = useState<number[]>(() => {
-        const saved = localStorage.getItem('steam-king-blacklist');
+        const saved = localStorage.getItem('vanguard-blacklist');
         return saved ? JSON.parse(saved) : [];
     });
     const [randomGame, setRandomGame] = useState<Game | null>(null);
@@ -247,7 +247,7 @@ const RootComponent = () => {
     const toggleBlacklist = (appid: number) => {
         setBlacklist(prev => {
             const next = prev.includes(appid) ? prev.filter(id => id !== appid) : [...prev, appid];
-            localStorage.setItem('steam-king-blacklist', JSON.stringify(next));
+            localStorage.setItem('vanguard-blacklist', JSON.stringify(next));
             return next;
         });
     };

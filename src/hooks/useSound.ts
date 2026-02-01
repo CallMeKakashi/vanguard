@@ -11,7 +11,7 @@ const FREQ = {
 export const useSound = () => {
     const audioContext = useRef<AudioContext | null>(null);
     const [isMuted, setIsMuted] = useState(() => {
-        return localStorage.getItem('steam-king-muted') === 'true';
+        return localStorage.getItem('vanguard-muted') === 'true';
     });
 
     useEffect(() => {
@@ -37,7 +37,7 @@ export const useSound = () => {
     const toggleMute = useCallback(() => {
         setIsMuted(prev => {
             const next = !prev;
-            localStorage.setItem('steam-king-muted', String(next));
+            localStorage.setItem('vanguard-muted', String(next));
             return next;
         });
     }, []);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const STORAGE_PREFIX = 'steam-king-notes-';
+const STORAGE_PREFIX = 'vanguard-notes-';
 
 export const useMissionLog = (appId: number | null) => {
     const [notes, setNotes] = useState('');
