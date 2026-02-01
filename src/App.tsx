@@ -38,7 +38,9 @@ import SquadronWidget from './components/SquadronWidget';
 import { useSound } from './hooks/useSound';
 import { Game, Profile } from './types';
 
-const API_BASE = '/api';
+// @ts-ignore
+const API_PORT = window.electron?.apiPort || '3001';
+const API_BASE = `http://localhost:${API_PORT}/api`;
 const STEAM_ID = import.meta.env.VITE_STEAM_ID || '';
 
 // Local interfaces removed in favor of src/types.ts
@@ -313,7 +315,7 @@ const RootComponent = () => {
                             <div className="absolute inset-0 bg-indigo-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
                             <img src="/logo.png" className="w-12 h-12 rounded-2xl relative z-10 border border-white/10" alt="Logo" />
                         </div>
-                        <h1 className="text-2xl font-black tracking-tighter text-white uppercase italic">Steam<br />King</h1>
+                        <h1 className="text-2xl font-black tracking-tighter text-white uppercase italic">Vanguard</h1>
                     </div>
 
                     <nav className="space-y-2">

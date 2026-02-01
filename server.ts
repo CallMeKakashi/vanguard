@@ -6,7 +6,9 @@ import express from 'express';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+// Priority: Argument > Env > Default 3001
+const argPort = process.argv.find(arg => arg.startsWith('--port='))?.split('=')[1];
+const PORT = argPort || process.env.PORT || 3001;
 const STEAM_API_KEY = process.env.VITE_STEAM_API_KEY;
 
 app.use(cors());

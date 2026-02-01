@@ -2,3 +2,8 @@ node_modules
 .env
 dist
 .DS_Store
+dist-electron
+dist-electron-build
+*.log
+.cache/
+
