@@ -30,34 +30,24 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AchievementsList from './components/AchievementsList';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
+import CommandPalette from './components/CommandPalette';
 import MissionLogDrawer from './components/MissionLogDrawer';
 import SquadronWidget from './components/SquadronWidget';
 import { useSound } from './hooks/useSound';
+import { Game, Profile } from './types';
 
 const API_BASE = '/api';
 const STEAM_ID = import.meta.env.VITE_STEAM_ID || '';
 
-interface Profile {
-    avatarfull: string;
-    personaname: string;
-    personastate: number;
-}
-
-interface Game {
-    appid: number;
-    name: string;
-    playtime_forever: number;
-    playtime_2weeks?: number;
-    img_icon_url: string;
-    has_community_visible_stats?: boolean;
-}
+// Local interfaces removed in favor of src/types.ts
 
 // --- TanStack Router Search Params Schema ---
 interface AppSearchParams {
     tab?: 'overview' | 'library' | 'stats' | 'discover' | 'blacklist';
     game?: number;
     sort?: 'playtime' | 'name' | 'recency';
-    filter?: 'all' | 'mastered' | 'blacklisted' | 'active';
+    filter?: 'all' | 'mastered' | 'blacklisted' | 'active' | 'hunter';
 }
 
 // --- TanStack Router Configuration ---
@@ -162,10 +152,12 @@ const RootComponent = () => {
     const [randomGame, setRandomGame] = useState<Game | null>(null);
     const [discoveryQueue, setDiscoveryQueue] = useState<Game[]>([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isCmdOpen, setIsCmdOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [masteredAppIds, setMasteredAppIds] = useState<number[]>([]);
     const [isMissionLogOpen, setIsMissionLogOpen] = useState(false);
     const [missionLogGame, setMissionLogGame] = useState<{ id: number; name: string } | null>(null);
+    const [hunterTargets, setHunterTargets] = useState<number[]>([]);
 
     const { playHover, playClick, toggleMute, isMuted } = useSound();
 
@@ -199,20 +191,29 @@ const RootComponent = () => {
             }
 
             const mastered: number[] = [];
+            const hunters: number[] = [];
+
             for (const game of targets) {
                 try {
                     const res = await axios.get(`${API_BASE}/achievements/${STEAM_ID}/${game.appid}`);
                     const playerstats = res.data.achievements?.playerstats;
 
                     if (playerstats?.success !== false && playerstats?.achievements?.length > 0) {
-                        const allAchieved = playerstats.achievements.every((a: any) => a.achieved === 1);
-                        if (allAchieved) mastered.push(game.appid);
+                        const total = playerstats.achievements.length;
+                        const achieved = playerstats.achievements.filter((a: any) => a.achieved === 1).length;
+
+                        if (total > 0) {
+                            const ratio = achieved / total;
+                            if (ratio === 1) mastered.push(game.appid);
+                            if (ratio >= 0.5 && ratio < 1) hunters.push(game.appid);
+                        }
                     }
                 } catch (e) {
                     console.error(`Mastery check failed for ${game.appid}`, e);
                 }
             }
             setMasteredAppIds(mastered);
+            setHunterTargets(hunters);
         };
         verifyMastery();
     }, [games]);
@@ -272,6 +273,8 @@ const RootComponent = () => {
             result = result.filter(g => blacklist.includes(g.appid));
         } else if (vaultFilter === 'active') {
             result = result.filter(g => (g.playtime_2weeks || 0) > 0);
+        } else if (vaultFilter === 'hunter') {
+            result = result.filter(g => hunterTargets.includes(g.appid));
         }
 
         return [...result].sort((a, b) => {
@@ -370,6 +373,21 @@ const RootComponent = () => {
                 gameName={missionLogGame?.name || ''}
             />
 
+            <CommandPalette
+                open={isCmdOpen}
+                setOpen={setIsCmdOpen}
+                games={games}
+                onNavigate={(tab, gameId) => {
+                    setActiveTab(tab as any);
+                    if (gameId) setSelectedGameId(gameId);
+                }}
+                actions={{
+                    toggleMute,
+                    randomize: generateRandomGame,
+                    refresh: refreshData
+                }}
+            />
+
             {/* Main Content */}
             <main className="flex-1 flex flex-col relative h-screen overflow-y-auto overflow-x-hidden">
                 <header className="sticky top-0 z-40 bg-[#020205]/80 backdrop-blur-3xl border-b border-white/5 px-8 py-6 flex items-center justify-between transition-all duration-300">
@@ -451,6 +469,8 @@ const RootComponent = () => {
                                     ))}
                                 </div>
 
+                                <AnalyticsDashboard games={games} />
+
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                                     <div className="lg:col-span-12 xl:col-span-8 space-y-8">
                                         <section>
@@ -480,6 +500,11 @@ const RootComponent = () => {
                                                             {isMastered(game) && (
                                                                 <div className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1 shadow-lg shadow-yellow-500/20 z-10 scale-75">
                                                                     <Trophy className="w-3 h-3 text-black" fill="currentColor" />
+                                                                </div>
+                                                            )}
+                                                            {hunterTargets.includes(game.appid) && (
+                                                                <div className="absolute -top-2 -right-2 bg-orange-500 rounded-full p-1 shadow-lg shadow-orange-500/20 z-10 scale-75">
+                                                                    <Trophy className="w-3 h-3 text-black" />
                                                                 </div>
                                                             )}
                                                         </div>
@@ -639,16 +664,26 @@ const RootComponent = () => {
                                                     </div>
                                                 </div>
                                                 <div className="p-4 bg-white/5 border-t border-white/5">
-                                                    <div className="flex items-center justify-between mb-4">
+                                                    <div className="flex items-center gap-2 mb-4">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                playClick();
+                                                                window.location.href = `steam://run/${game.appid}`;
+                                                            }}
+                                                            className="flex-1 px-3 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-[10px] font-black uppercase tracking-widest text-white transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                                                        >
+                                                            <Rocket className="w-3 h-3" /> LAUNCH
+                                                        </button>
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setMissionLogGame({ id: game.appid, name: game.name });
                                                                 setIsMissionLogOpen(true);
                                                             }}
-                                                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                                                            className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
                                                         >
-                                                            <Notebook className="w-3 h-3" /> LOGS
+                                                            <Notebook className="w-3 h-3" />
                                                         </button>
                                                     </div>
                                                     <div className="flex gap-2">
