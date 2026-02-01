@@ -21,6 +21,7 @@ import {
     Library,
     Notebook,
     RefreshCw,
+    Rocket,
     Search,
     Sparkles,
     Star,
