@@ -4,12 +4,12 @@
 
 Vanguard is a high-performance, tactical dashboard for your Steam library. Designed with a military-industrial aesthetic, it transforms your game collection into an operational asset repository, providing advanced filtering, squadron tracking, and mission logging capabilities.
 
-![Vanguard Dashboard UI](https://github.com/Start-Automating/steam-king/assets/placeholder-image-url.png)
+![Vanguard Dashboard UI](https://github.com/Start-Automating/vanguard/assets/placeholder-image-url.png)
 
 ## Key Features
 
 -   **Tactical Asset Repository**: A grid-based vault of your games with advanced filtering (Playtime, Status, Genre) and custom "Vanguard" sorting.
--   **Squadron Tracking**: Real-time status monitoring of your Steam friends.
+-   **Squadron Tracking**: Real-time status monitoring of your friends.
 -   **Mission Logs**: Integrated notepad for tracking objectives, guides, and tactical notes per game.
 -   **Operations Analytics**: Visual breakdown of your engagement metrics, top genres, and completion rates.
 -   **Blacklist Protocol**: Exclude unwanted or deprecated assets from your active view.
@@ -27,8 +27,8 @@ Vanguard is a high-performance, tactical dashboard for your Steam library. Desig
 
 1.  **Clone the Repository**
     ```bash
-    git clone https://github.com/CallMeKakashi/steam-king.git
-    cd steam-king
+    git clone https://github.com/CallMeKakashi/vanguard.git
+    cd vanguard
     ```
 
 2.  **Install Dependencies**
