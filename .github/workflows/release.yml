@@ -9,41 +9,92 @@ permissions:
   contents: write
 
 jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+            node-version: 20
+            cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+      - name: Build Web
+        run: npm run build
+      - name: Build Electron (Linux)
+        run: npm run electron:build -- --linux
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: dist-electron-build/*.*
+          retention-days: 1
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+            node-version: 20
+            cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+      - name: Build Web
+        run: npm run build
+      - name: Build Electron (Windows)
+        run: npm run electron:build -- --win
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+            name: windows-artifacts
+            path: dist-electron-build/*.exe
+            retention-days: 1
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+            node-version: 20
+            cache: 'npm'
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+      - name: Build Web
+        run: npm run build
+      - name: Build Electron (Mac)
+        run: npm run electron:build -- --mac
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+            name: mac-artifacts
+            path: |
+              dist-electron-build/*.dmg
+              dist-electron-build/*.zip
+            retention-days: 1
+
   release:
+    needs: [build-linux, build-windows, build-mac]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
         with:
-          node-version: 20
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-        
-      - name: Build Web
-        run: npm run build
-        
-      - name: Build Electron (Linux/AppImage)
-        # Only building for Linux in this environment to keep it simple. 
-        # For Windows/Mac, a matrix strategy or separate job is recommended.
-        run: npm run electron:build -- --linux
-        continue-on-error: true
-        
+            path: artifacts
+            merge-multiple: true
+            
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           draft: false
           prerelease: false
           generate_release_notes: true
-          files: |
-            dist-electron-build/*.AppImage
-            dist-electron-build/*.deb
-            dist-electron-build/*.rpm
-            dist-electron-build/*.exe
-            dist-electron-build/*.zip
-            dist-electron-build/*.dmg
+          files: artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
