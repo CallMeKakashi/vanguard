@@ -257,6 +257,12 @@ const RootComponent = () => {
                 </div>
 
 
+                <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-white/5 hover:scrollbar-thumb-white/10 mt-6 mb-6">
+                    <Suspense fallback={<div className="h-32 bg-white/5 rounded-xl animate-pulse mx-8" />}>
+                        <SquadronWidget steamId={steamId} apiBase={API_BASE} />
+                    </Suspense>
+                </div>
+
                 <div className="mt-auto p-8 border-t border-white/5 space-y-4">
                     <button
                         onClick={toggleMute}
@@ -540,7 +546,7 @@ const RootComponent = () => {
                                     <div className="space-y-4">
                                         <h2 className="text-5xl font-black tracking-tighter text-white italic uppercase leading-none">Asset Repository</h2>
                                         <div className="flex flex-wrap gap-3">
-                                            {['all', 'mastered', 'active', 'blacklisted'].map((f) => (
+                                            {['all', 'mastered', 'active', 'hunter', 'blacklisted'].map((f) => (
                                                 <button
                                                     key={f}
                                                     onClick={() => vault.setVaultFilter(f as any)}
