@@ -19,8 +19,12 @@ const Logger = {
 app.use(cors());
 app.use(express.json());
 
+import { NextFunction, Request, Response } from 'express';
+
+// ...
+
 // Request logging middleware
-app.use((req, res, next) => {
+app.use((req: Request, _res: Response, next: NextFunction) => {
     Logger.info(`${req.method} ${req.url}`);
     next();
 });
@@ -126,6 +130,33 @@ app.get('/api/friends/:steamid', checkApiKey, async (req: any, res: any) => {
         const status = error.response?.status || 500;
         Logger.error(`Friend fetch FAILED (${status}):`, error.message);
         res.status(status).json({ error: error.message, details: error.response?.data || 'No additional details' });
+    }
+});
+
+app.get('/api/store/:appid', checkApiKey, async (req: any, res: any) => {
+    try {
+        const { appid } = req.params;
+        Logger.debug(`Fetching store details for AppID: ${appid}`);
+
+        // Steam Store API does not require API Key, but is rate limited.
+        const response = await axios.get(`https://store.steampowered.com/api/appdetails?appids=${appid}`);
+
+        const data = response.data[appid];
+        if (data.success) {
+            const gameData = data.data;
+            res.json({
+                genres: gameData.genres || [],
+                categories: gameData.categories || [],
+                metacritic: gameData.metacritic || null,
+                release_date: gameData.release_date || null
+            });
+        } else {
+            res.json({ genres: [], categories: [], metacritic: null });
+        }
+    } catch (error: any) {
+        Logger.error(`Store fetch FAILED for ${req.params.appid}:`, error.message);
+        // Fail gracefully so UI continues
+        res.json({ genres: [], categories: [], metacritic: null });
     }
 });
 

@@ -1,17 +1,48 @@
-import { app, BrowserWindow, Menu, shell, utilityProcess } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, shell, utilityProcess } from 'electron';
+import setupSquirrelEvents from 'electron-squirrel-startup';
+import { autoUpdater } from 'electron-updater';
 import path from 'path';
 
 // Standard CJS __dirname is available because we changed the tsconfig module to CommonJS
 // and will force CommonJS via a package.json in dist-electron.
 
+// Configure Updater
+autoUpdater.autoDownload = false;
+autoUpdater.logger = console;
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (require('electron-squirrel-startup')) {
+if (setupSquirrelEvents) {
     app.quit();
 }
 
 let mainWindow: BrowserWindow | null = null;
 let serverProcess: any = null;
 const API_PORT = '3001'; // We can make this dynamic later if needed
+
+// --- Update Events ---
+autoUpdater.on('update-available', (info) => {
+    mainWindow?.webContents.send('update-available', info);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+    mainWindow?.webContents.send('update-downloaded', info);
+});
+
+autoUpdater.on('error', (err) => {
+    mainWindow?.webContents.send('update-error', err.message);
+});
+
+ipcMain.handle('check-for-updates', async () => {
+    return await autoUpdater.checkForUpdates();
+});
+
+ipcMain.on('download-update', () => {
+    autoUpdater.downloadUpdate();
+});
+
+ipcMain.on('install-update', () => {
+    autoUpdater.quitAndInstall();
+});
 
 function startServer() {
     const serverPath = path.join(__dirname, 'server.js');

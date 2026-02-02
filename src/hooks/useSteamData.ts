@@ -20,7 +20,7 @@ export const useSteamData = (steamId: string, apiBase: string) => {
                 axios.get(`${apiBase}/games/${steamId}`),
                 axios.get(`${apiBase}/recent/${steamId}`)
             ]);
-            let rawGames = (gamesRes.data.response?.games || []) as Game[];
+            const rawGames = (gamesRes.data.response?.games || []) as Game[];
             const recentGamesMap = new Map((recentRes.data.response?.games || []).map((g: any) => [g.appid, g]));
 
             // Sync and Force include Spacewar (AppID 480)

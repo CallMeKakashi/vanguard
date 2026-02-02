@@ -18,6 +18,23 @@ interface AnalyticsDashboardProps {
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#64748b'];
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-[#050508]/95 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl">
+                <p className="text-[10px] font-black text-txt-muted mb-2 uppercase tracking-widest">{label || payload[0].payload.name}</p>
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-accent-main" />
+                    <p className="text-sm font-black text-txt-main">
+                        {payload[0].value} {payload[0].unit || 'HOURS'}
+                    </p>
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 const AnalyticsDashboard = ({ games }: AnalyticsDashboardProps) => {
     // 1. Prepare Data: Top 5 Games by Playtime
     const topGames = [...games]
@@ -38,20 +55,6 @@ const AnalyticsDashboard = ({ games }: AnalyticsDashboardProps) => {
         { name: '< 10h', value: games.filter(g => g.playtime_forever <= 600).length },
     ].filter(d => d.value > 0);
 
-    const CustomTooltip = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className="bg-[#0a0a0f] border border-white/10 p-3 rounded-xl shadow-xl">
-                    <p className="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-1">{label || payload[0].name}</p>
-                    <p className="text-white text-sm font-black">
-                        {payload[0].value} {payload[0].unit || 'ASSETS'}
-                    </p>
-                </div>
-            );
-        }
-        return null;
-    };
-
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
             {/* Chart 1: Top Assets (Bar) */}
@@ -70,7 +73,7 @@ const AnalyticsDashboard = ({ games }: AnalyticsDashboardProps) => {
                             <YAxis dataKey="name" type="category" width={100} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} />
                             <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<CustomTooltip />} />
                             <Bar dataKey="hours" unit="HRS" radius={[0, 4, 4, 0]} barSize={20}>
-                                {topGames.map((entry, index) => (
+                                {topGames.map((_, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                             </Bar>
@@ -101,7 +104,7 @@ const AnalyticsDashboard = ({ games }: AnalyticsDashboardProps) => {
                                 dataKey="value"
                                 stroke="none"
                             >
-                                {distribution.map((entry, index) => (
+                                {distribution.map((_, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                             </Pie>

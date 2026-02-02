@@ -33,3 +33,18 @@
     - [x] Update Project Metadata (`package.json`, `index.html`)
     - [x] Replace Logo Assets
     - [x] Update Application Titles
+
+- [x] **Phase 6: Visual Warfare & Fleet Org**
+    - [x] **Visuals**: Implement Theme Context & CSS Variables
+    - [x] **Visuals**: Create Theme Toggle UI
+    - [x] **Fleet**: Implement Backend Store Endpoint (`/api/store/:appid`)
+    - [x] **Fleet**: Implement Squads (Collections) Logic & UI (via Grouping/Filters)
+    - [x] **Fleet**: Implement Auto-Sort Heuristic (Metadata Sorting)
+    - [x] **Vault**: Implement Advanced Filters & Grouping
+    - [x] **Vault**: Create Modern Sort Dropdown
+
+- [x] **Phase 7: Production Hardening**
+  - [x] Verify Vault Performance (Virtualization)
+  - [x] Create Settings Modal (Clear Cache, Updates)
+  - [x] Implement Auto-Updater (`electron-updater`)
+  - [ ] **Infrastructure**: Finalize Production Build Settings

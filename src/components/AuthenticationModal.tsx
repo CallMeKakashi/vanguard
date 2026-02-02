@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ExternalLink, HelpCircle, Key, Shield, User, Zap } from 'lucide-react';
 import React, { useState } from 'react';
 
