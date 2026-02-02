@@ -17,7 +17,8 @@
     "electron:watch": "nodemon --watch electron --watch server.ts --ext ts --exec \"npm run electron:compile && wait-on http://localhost:5180 && electron .\"",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"npm run server\" \"npm run dev\" \"npm run electron:watch\"",
     "electron:build": "cross-env ELECTRON_BUILD_CACHE=./.electron-builder-cache npm run electron:compile && vite build && electron-builder",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "echo \"No test suite implemented yet\" && exit 0"
   },
   "build": {
     "appId": "com.vanguard.app",

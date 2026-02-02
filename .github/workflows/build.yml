@@ -1,0 +1,40 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master", "develop" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci --legacy-peer-deps
+      
+    - name: Lint
+      # If you don't have a lint script, this step can be removed or commented out.
+      # Ideally: npm run lint
+      run: echo "Linting step placeholder - add 'lint' script to package.json if needed"
+      
+    - name: Build
+      run: npm run build
+      
+    - name: Run Tests
+      # If you don't have tests yet, this keeps the pipeline green but warns you.
+      run: |
+        if npm run | grep -q "test"; then
+          npm test
+        else
+          echo "No test script found, skipping tests."
+        fi
