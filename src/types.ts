@@ -8,6 +8,8 @@ export interface Achievement {
 
 export interface Game {
     appid: number;
+    display_appid?: number;
+    custom_header?: string;
     name: string;
     playtime_forever: number;
     playtime_2weeks?: number;

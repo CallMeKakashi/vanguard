@@ -1,3 +1,4 @@
+import logo from '@/assets/logo.png';
 import { Badge } from '@/components/ui/badge';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -26,21 +27,33 @@ import {
     Sparkles,
     Star,
     Trophy,
+    Users,
     XCircle,
     Zap
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import AchievementsList from './components/AchievementsList';
-import AnalyticsDashboard from './components/AnalyticsDashboard';
-import AuthenticationModal from './components/AuthenticationModal';
-import CommandPalette from './components/CommandPalette';
-import MissionLogDrawer from './components/MissionLogDrawer';
-import SquadronWidget from './components/SquadronWidget';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import Skeleton from './components/ui/Skeleton';
+
+const AchievementsList = lazy(() => import('./components/AchievementsList'));
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
+const AuthenticationModal = lazy(() => import('./components/AuthenticationModal'));
+const CommandPalette = lazy(() => import('./components/CommandPalette'));
+const MissionLogDrawer = lazy(() => import('./components/MissionLogDrawer'));
+const SquadronWidget = lazy(() => import('./components/SquadronWidget'));
+
 import { useMastery } from './hooks/useMastery';
 import { useSound } from './hooks/useSound';
 import { useSteamData } from './hooks/useSteamData';
 import { useVault, VaultSearchParams } from './hooks/useVault';
 import { Game } from './types';
+
+declare global {
+    interface Window {
+        electron: {
+            apiPort: string;
+        };
+    }
+}
 
 const API_PORT = window.electron?.apiPort || '3001';
 const API_BASE = `http://localhost:${API_PORT}/api`;
@@ -72,6 +85,7 @@ declare module '@tanstack/react-router' {
 const RootComponent = () => {
     // --- Auth State ---
     const [steamId, setSteamId] = useState<string>(() => localStorage.getItem('vanguard-steam-id') || '');
+    const [isSquadronOpen, setIsSquadronOpen] = useState(false);
     const [steamKey, setSteamKey] = useState<string>(() => localStorage.getItem('vanguard-steam-key') || '');
 
     // Sync API Key to server
@@ -98,14 +112,24 @@ const RootComponent = () => {
     };
 
     // --- Data Fetching ---
-    const { profile, games, recentGames, loading, error } = useSteamData(steamId, API_BASE);
+    const { profile, games, recentGames, loading, error: steamError } = useSteamData(steamId, API_BASE);
     const { masteredAppIds, hunterTargets } = useMastery(games, steamId, API_BASE);
+
+    useEffect(() => {
+        if (steamKey) {
+            axios.post(`${API_BASE}/config`, { apiKey: steamKey })
+                .catch(err => {
+                    console.error('[Auth] Failed to sync session to server:', err);
+                });
+        }
+    }, [steamKey, steamId]);
+
+    const queryClient = useQueryClient();
+    const { playHover, playClick, toggleMute, isMuted } = useSound();
 
     // --- State & Search Params ---
     const search = useSearch({ from: '__root__' }) as VaultSearchParams;
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
-    const { playHover, playClick, toggleMute, isMuted } = useSound();
 
     const updateSearchParams = useCallback((updates: Partial<VaultSearchParams>) => {
         navigate({ to: '/', search: (prev: any) => ({ ...prev, ...updates }) });
@@ -169,7 +193,11 @@ const RootComponent = () => {
     const lastUpdated = new Date().toLocaleTimeString();
 
     if (!steamId || !steamKey) {
-        return <AuthenticationModal onAuthenticate={handleAuthenticate} />;
+        return (
+            <Suspense fallback={<div className="fixed inset-0 bg-[#020205] flex items-center justify-center"><Skeleton className="w-full max-w-xl h-[500px]" /></div>}>
+                <AuthenticationModal onAuthenticate={handleAuthenticate} />
+            </Suspense>
+        );
     }
 
     return (
@@ -180,7 +208,7 @@ const RootComponent = () => {
                     <div className="flex items-center gap-4 mb-12">
                         <div className="relative group">
                             <div className="absolute inset-0 bg-indigo-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                            <img src="/logo.png" className="w-12 h-12 rounded-2xl relative z-10 border border-white/10" alt="Logo" />
+                            <img src={logo} className="w-12 h-12 rounded-2xl relative z-10 border border-white/10" alt="Logo" />
                         </div>
                         <h1 className="text-2xl font-black tracking-tighter text-white uppercase italic">Vanguard</h1>
                     </div>
@@ -202,15 +230,32 @@ const RootComponent = () => {
                                 {vault.activeTab === item.id && <motion.div layoutId="nav-glow" className="absolute inset-0 bg-indigo-500/10 blur-xl rounded-2xl" />}
                                 <item.icon className={`w-5 h-5 transition-colors ${vault.activeTab === item.id ? 'text-indigo-400' : 'group-hover:text-indigo-300'}`} />
                                 <span className="relative z-10 uppercase tracking-widest text-xs">{item.label}</span>
+                                {item.id === 'discover' && <span className="ml-2 px-1.5 py-0.5 rounded bg-indigo-500 text-[8px] font-black text-white">NEW</span>}
                                 {vault.activeTab === item.id && <ChevronRight className="w-4 h-4 ml-auto text-indigo-400" />}
                             </button>
                         ))}
                     </nav>
+
+                    <div className="mt-8">
+                        <button
+                            onClick={() => { playClick(); setIsCmdOpen(true); }}
+                            className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all border border-white/5 group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                    <Search size={14} />
+                                </span>
+                                <div className="flex flex-col items-start">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-300">Command Center</span>
+                                </div>
+                            </div>
+                            <kbd className="hidden lg:inline-flex h-5 items-center gap-1 rounded border border-white/10 bg-white/5 px-1.5 font-mono text-[10px] font-medium text-slate-500">
+                                <span className="text-xs">Ctrl</span>K
+                            </kbd>
+                        </button>
+                    </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-white/5 hover:scrollbar-thumb-white/10">
-                    <SquadronWidget />
-                </div>
 
                 <div className="mt-auto p-8 border-t border-white/5 space-y-4">
                     <button
@@ -221,7 +266,7 @@ const RootComponent = () => {
                         <span className={isMuted ? 'text-slate-600' : 'text-indigo-400'}>{isMuted ? 'OFF' : 'ON'}</span>
                     </button>
 
-                    {profile && (
+                    {profile ? (
                         <div className="p-4 rounded-[1.5rem] bg-white/5 border border-white/5 space-y-3 group hover:bg-white/10 transition-colors">
                             <div className="flex items-center gap-4">
                                 <img src={profile.avatarfull} className="w-10 h-10 rounded-xl border border-white/10 shadow-lg" alt="User" />
@@ -240,31 +285,42 @@ const RootComponent = () => {
                                 <Zap className="w-3 h-3" /> TERMINATE SESSION
                             </button>
                         </div>
+                    ) : (
+                        <button
+                            onClick={handleLogout}
+                            className="w-full py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest border border-red-500/20 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Zap className="w-3 h-3" /> RESET CREDENTIALS
+                        </button>
                     )}
                 </div>
             </aside>
 
-            <MissionLogDrawer
-                isOpen={isMissionLogOpen}
-                onClose={() => setIsMissionLogOpen(false)}
-                appId={missionLogGame?.id || null}
-                gameName={missionLogGame?.name || ''}
-            />
+            <Suspense fallback={null}>
+                <MissionLogDrawer
+                    isOpen={isMissionLogOpen}
+                    onClose={() => setIsMissionLogOpen(false)}
+                    appId={missionLogGame?.id || null}
+                    gameName={missionLogGame?.name || ''}
+                />
+            </Suspense>
 
-            <CommandPalette
-                open={isCmdOpen}
-                setOpen={setIsCmdOpen}
-                games={games}
-                onNavigate={(tab, gameId) => {
-                    vault.setActiveTab(tab);
-                    if (gameId) vault.setSelectedGameId(gameId);
-                }}
-                actions={{
-                    toggleMute,
-                    randomize: generateRandomGame,
-                    refresh: refreshData
-                }}
-            />
+            <Suspense fallback={null}>
+                <CommandPalette
+                    open={isCmdOpen}
+                    setOpen={setIsCmdOpen}
+                    games={games}
+                    onNavigate={(tab, gameId) => {
+                        vault.setActiveTab(tab);
+                        if (gameId) vault.setSelectedGameId(gameId);
+                    }}
+                    actions={{
+                        toggleMute,
+                        randomize: generateRandomGame,
+                        refresh: refreshData
+                    }}
+                />
+            </Suspense>
 
             <main className="flex-1 flex flex-col relative h-screen overflow-y-auto overflow-x-hidden">
                 <header className="sticky top-0 z-40 bg-[#020205]/80 backdrop-blur-3xl border-b border-white/5 px-8 py-6 flex items-center justify-between transition-all duration-300">
@@ -288,6 +344,12 @@ const RootComponent = () => {
                     </div>
 
                     <div className="flex items-center gap-6">
+                        {steamError && (
+                            <div className="flex items-center gap-3 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 mb-6">
+                                <XCircle className="w-5 h-5 flex-shrink-0" />
+                                <span className="text-sm font-medium">{steamError}</span>
+                            </div>
+                        )}
                         <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
                             <History className="w-3.5 h-3.5 text-indigo-400" />
                             <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{lastUpdated}</span>
@@ -299,9 +361,9 @@ const RootComponent = () => {
                 </header>
 
                 <div className="p-8 lg:p-12 space-y-12">
-                    {error && (
+                    {steamError && (
                         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-bold uppercase tracking-widest">
-                            {error}
+                            {steamError}
                         </div>
                     )}
 
@@ -346,7 +408,9 @@ const RootComponent = () => {
                                     ))}
                                 </div>
 
-                                <AnalyticsDashboard games={games} />
+                                <Suspense fallback={<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12"><Skeleton className="h-64 rounded-[2.5rem]" /><Skeleton className="h-64 rounded-[2.5rem]" /></div>}>
+                                    <AnalyticsDashboard games={games} />
+                                </Suspense>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                                     <div className="lg:col-span-12 xl:col-span-8 space-y-8">
@@ -373,9 +437,10 @@ const RootComponent = () => {
                                                             <div className="w-32 h-16 rounded-xl overflow-hidden shadow-lg relative group">
                                                                 <div className="absolute inset-0 bg-indigo-500/20 mix-blend-overlay opacity-0 group-hover:opacity-100 transition-opacity" />
                                                                 <img
-                                                                    src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`}
+                                                                    src={game.custom_header || `https://cdn.akamai.steamstatic.com/steam/apps/${game.display_appid || game.appid}/header.jpg`}
                                                                     className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-700"
                                                                     alt={game.name}
+                                                                    loading="lazy"
                                                                 />
                                                             </div>
                                                             {isMastered(game) && (
@@ -424,7 +489,7 @@ const RootComponent = () => {
                                                         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-4 bg-white/5 rounded-3xl border border-white/10">
                                                             <div className="flex items-center gap-4">
                                                                 <img
-                                                                    src={`https://cdn.akamai.steamstatic.com/steam/apps/${randomGame.appid}/header.jpg`}
+                                                                    src={randomGame.custom_header || `https://cdn.akamai.steamstatic.com/steam/apps/${randomGame.display_appid || randomGame.appid}/header.jpg`}
                                                                     className="w-20 h-10 object-cover rounded-xl border border-white/10"
                                                                     alt={randomGame.name}
                                                                 />
@@ -516,7 +581,7 @@ const RootComponent = () => {
                                             <div className="relative h-48 overflow-hidden">
                                                 <div className="absolute inset-0 bg-gradient-to-t from-[#020205] to-transparent z-10" />
                                                 <img
-                                                    src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`}
+                                                    src={game.custom_header || `https://cdn.akamai.steamstatic.com/steam/apps/${game.display_appid || game.appid}/header.jpg`}
                                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                                     alt={game.name}
                                                 />
@@ -600,7 +665,9 @@ const RootComponent = () => {
                                             </button>
                                             <h2 className="text-4xl font-black tracking-tighter text-white italic uppercase">Operational Data</h2>
                                         </div>
-                                        <AchievementsList steamId={steamId} appId={vault.selectedGame.id} gameName={vault.selectedGame.name} />
+                                        <Suspense fallback={<div className="space-y-8"><Skeleton className="h-32 rounded-[2rem]" /><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><Skeleton className="h-20" /><Skeleton className="h-20" /></div></div>}>
+                                            <AchievementsList steamId={steamId} appId={vault.selectedGame.display_appid || vault.selectedGame.id} gameName={vault.selectedGame.name} />
+                                        </Suspense>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center py-32 text-center">
@@ -648,7 +715,7 @@ const RootComponent = () => {
                                         >
                                             <div className="absolute inset-0 z-0">
                                                 <img
-                                                    src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/library_hero.jpg`}
+                                                    src={game.custom_header || `https://cdn.akamai.steamstatic.com/steam/apps/${game.display_appid || game.appid}/library_hero.jpg`}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                                     alt={game.name}
                                                 />
@@ -710,7 +777,7 @@ const RootComponent = () => {
                                             >
                                                 <div className="flex items-center gap-4 mb-6 relative">
                                                     <img
-                                                        src={`https://cdn.akamai.steamstatic.com/steam/apps/${game.appid}/header.jpg`}
+                                                        src={game.custom_header || `https://cdn.akamai.steamstatic.com/steam/apps/${game.display_appid || game.appid}/header.jpg`}
                                                         className="w-14 h-14 rounded-2xl grayscale object-cover border border-white/10"
                                                         alt={game.name}
                                                     />
@@ -745,6 +812,41 @@ const RootComponent = () => {
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[150px] rounded-full"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[150px] rounded-full"></div>
+            </div>
+
+            {/* Floating Squadron Interface */}
+            <div className="fixed bottom-8 right-8 z-[60] flex flex-col items-end gap-4 pointer-events-none">
+                <AnimatePresence>
+                    {isSquadronOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="w-80 h-[500px] bg-[#050508]/90 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col pointer-events-auto"
+                        >
+                            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Tactical Squadron</h3>
+                                <button onClick={() => setIsSquadronOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                                    <XCircle size={16} />
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 scrollbar-none">
+                                <Suspense fallback={<div className="space-y-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>}>
+                                    <SquadronWidget steamId={steamId} apiBase={API_BASE} />
+                                </Suspense>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsSquadronOpen(!isSquadronOpen)}
+                    className={`p-5 rounded-3xl border shadow-2xl transition-all flex items-center justify-center pointer-events-auto ${isSquadronOpen ? 'bg-indigo-500 border-indigo-400 text-white' : 'bg-[#050508]/80 backdrop-blur-xl border-white/10 text-indigo-400 hover:bg-white/10'}`}
+                >
+                    <Users className="w-6 h-6" />
+                </motion.button>
             </div>
         </div>
     );

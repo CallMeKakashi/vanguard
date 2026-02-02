@@ -3,8 +3,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Gamepad2, Users, Wifi, WifiOff } from 'lucide-react';
 
-const API_BASE = '/api';
-const STEAM_ID = import.meta.env.VITE_STEAM_ID || '';
+// props handled dynamically
 
 interface Friend {
     steamid: string;
@@ -17,16 +16,21 @@ interface Friend {
     gameid?: string;
 }
 
-const SquadronWidget = () => {
+interface SquadronWidgetProps {
+    steamId: string;
+    apiBase: string;
+}
+
+const SquadronWidget = ({ steamId, apiBase }: SquadronWidgetProps) => {
     const { data: friends, isLoading } = useQuery({
-        queryKey: ['friends', STEAM_ID],
+        queryKey: ['friends', steamId],
         queryFn: async () => {
-            if (!STEAM_ID) return [];
-            const res = await axios.get(`${API_BASE}/friends/${STEAM_ID}`);
+            if (!steamId) return [];
+            const res = await axios.get(`${apiBase}/friends/${steamId}`);
             return (res.data.friends || []) as Friend[];
         },
         refetchInterval: 30000, // Refresh every 30s
-        enabled: !!STEAM_ID
+        enabled: !!steamId
     });
 
     // Sort: In-Game > Online > Offline
@@ -70,9 +74,7 @@ const SquadronWidget = () => {
                 ) : (
                     activeSquadron.map((friend) => (
                         <motion.a
-                            href={friend.profileurl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={`steam://url/SteamIDPage/${friend.steamid}`}
                             key={friend.steamid}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}

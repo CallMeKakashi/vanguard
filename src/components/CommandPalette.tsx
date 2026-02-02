@@ -1,27 +1,20 @@
 import { Command } from 'cmdk';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-    Calculator,
-    Calendar,
-    CreditCard,
     Gamepad2,
     LayoutDashboard,
     Library,
     Search,
-    Settings,
-    Smile,
     Sparkles,
     Trophy,
-    User,
-    Volume2,
     VolumeX
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Game } from '../types';
 
 interface CommandPaletteProps {
     open: boolean;
-    setOpen: (open: boolean) => void;
+    setOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
     games: Game[];
     onNavigate: (tab: string, gameId?: number) => void;
     actions: {
@@ -37,7 +30,7 @@ const CommandPalette = ({ open, setOpen, games, onNavigate, actions }: CommandPa
         const down = (e: KeyboardEvent) => {
             if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
-                setOpen((open) => !open);
+                setOpen((open: boolean) => !open);
             }
         };
         document.addEventListener('keydown', down);
@@ -65,6 +58,7 @@ const CommandPalette = ({ open, setOpen, games, onNavigate, actions }: CommandPa
                             <div className="flex items-center border-b border-white/5 px-4" cmdk-input-wrapper="">
                                 <Search className="mr-2 h-4 w-4 shrink-0 opacity-50 text-white" />
                                 <Command.Input
+                                    autoFocus
                                     placeholder="Type a command or search assets..."
                                     className="flex h-14 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-slate-500 text-white font-mono uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-50"
                                 />

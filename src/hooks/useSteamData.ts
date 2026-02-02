@@ -1,3 +1,4 @@
+import eldenRingCoop from '@/assets/elden-ring-coop.jpg';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Game, Profile } from '../types';
@@ -41,7 +42,17 @@ export const useSteamData = (steamId: string, apiBase: string) => {
                 });
             }
 
-            return rawGames.map(g => g.appid === 480 ? { ...g, name: 'ELDEN RING COOP' } : g);
+            return rawGames.map(g => {
+                if (g.appid === 480) {
+                    return {
+                        ...g,
+                        name: 'ELDEN RING COOP',
+                        display_appid: 1245620,
+                        custom_header: eldenRingCoop
+                    };
+                }
+                return g;
+            });
         },
         enabled: !!steamId,
     });
@@ -51,7 +62,17 @@ export const useSteamData = (steamId: string, apiBase: string) => {
         queryFn: async () => {
             const res = await axios.get(`${apiBase}/recent/${steamId}`);
             const rawGames = (res.data.response?.games || []) as Game[];
-            return rawGames.map(g => g.appid === 480 ? { ...g, name: 'ELDEN RING COOP' } : g);
+            return rawGames.map(g => {
+                if (g.appid === 480) {
+                    return {
+                        ...g,
+                        name: 'ELDEN RING COOP',
+                        display_appid: 1245620,
+                        custom_header: eldenRingCoop
+                    };
+                }
+                return g;
+            });
         },
         enabled: !!steamId,
     });

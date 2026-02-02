@@ -1,3 +1,4 @@
+import logo from '@/assets/logo.png';
 import { motion } from 'framer-motion';
 import {
     RefreshCw,
@@ -184,7 +185,7 @@ const AchievementsList = ({ steamId, appId, gameName }: { steamId: string; appId
                                 alt=""
                                 onError={(e) => {
                                     const target = e.target as HTMLImageElement;
-                                    target.src = '/logo.png';
+                                    target.src = logo;
                                 }}
                             />
                             <div className="min-w-0 flex-1">

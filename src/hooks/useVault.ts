@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Game } from '../types';
 
 export interface VaultSearchParams {
@@ -26,7 +26,7 @@ export const useVault = (
     const selectedGame = useMemo(() => {
         if (!selectedGameId) return null;
         const game = games.find(g => g.appid === selectedGameId);
-        return game ? { id: game.appid, name: game.name } : null;
+        return game ? { id: game.appid, name: game.name, display_appid: game.display_appid } : null;
     }, [games, selectedGameId]);
 
     const filteredAndSortedGames = useMemo(() => {

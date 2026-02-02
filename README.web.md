@@ -1,50 +1,45 @@
-# Vanguard Tactical Dashboard - Web Installation
-
-Guide for setting up and running the Vanguard dashboard as a local web application.
+# Vanguard Dashboard - Web Installation
 
 ## Prerequisites
-- **Node.js**: Version 18.x or higher
-- **NPM**: Version 9.x or higher
+- Node.js (v18 or higher)
+- A Steam API Key (Get it from: https://steamcommunity.com/dev/apikey)
+- Your Steam ID
 
-## Local Setup
+## Installation
 
-1. **Clone the Repository** (If not already done):
-   ```bash
-   git clone <repository-url>
-   cd steam-king
-   ```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/Start-Automating/steam-king.git
+    cd steam-king
+    ```
 
-2. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-3. **Initialize the Servers**:
-   You need to run both the frontend development server and the backend API server.
-   
-   - **Start API Server**:
-     ```bash
-     npm run server
-     ```
-     *Server runs on port 3001 by default.*
+## Running the Application
 
-   - **Start Web Dashboard (New Terminal)**:
-     ```bash
-     npm run dev
-     ```
-     *Dashboard runs on port 5180.*
+1.  **Start the development server:**
+    ```bash
+    npm start
+    ```
+    This will start both the React frontend (Vite) and the Express backend server.
 
-4. **Access the Dashboard**:
-   Open your browser and navigate to `http://localhost:5180`.
+2.  **Open the dashboard:**
+    Open your browser and navigate to `http://localhost:5173`.
 
-## Initial Configuration
-Upon first launch, you will be prompted with the **Nexus Authorization** modal.
-- **Steam ID 64**: Your unique numerical Steam identifier (e.g., `76561198XXXXXXXXX`).
-- **Web API Key**: Obtain your key from the [official Steam Dev portal](https://steamcommunity.com/dev/apikey).
+3.  **Initial Setup:**
+    - You will be prompted to enter your **Steam ID** and **Steam API Key**.
+    - These credentials are saved locally in your browser to keep them secure.
 
-> [!NOTE]
-> Your credentials are stored in your browser's `localStorage`. No `.env` configuration is required for the web version anymore.
+## Features
+- **Dashboard:** Overview of your profile, top games, and recent activity.
+- **Game Vault:** Browse your entire library with advanced filtering.
+- **Discovery:** Get new game recommendations based on your library.
+- **Achievements:** Track your progress and hunt for 100% completion.
+- **Squadron:** See your friends' status in real-time.
 
 ## Troubleshooting
-- **API Connectivity**: Ensure the API server is running on port 3001. If you change the port, ensure the frontend is updated accordingly.
-- **CORS Issues**: The API server is pre-configured to allow requests from `http://localhost:5180`.
+- **CORS Errors:** Ensure the backend server is running on port 3001.
+- **403 Forbidden:** Verify your Steam API Key is valid and your profile privacy settings are public.
