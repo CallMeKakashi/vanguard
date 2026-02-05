@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+llama-cpp-python
+torch
+requests
+tqdm
+praisonaiagents

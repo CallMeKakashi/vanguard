@@ -165,9 +165,10 @@ app.get('/api/achievements/:steamid/:appid', checkApiKey, async (req: any, res: 
         const { steamid, appid } = req.params;
         Logger.debug(`Fetching achievements -> AppID: ${appid}, SteamID: ${steamid}`);
 
-        const [achResponse, schemaResponse] = await Promise.allSettled([
+        const [achResponse, schemaResponse, globalStatsResponse] = await Promise.allSettled([
             axios.get(`https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?key=${STEAM_API_KEY}&steamid=${steamid}&appid=${appid}`),
-            axios.get(`https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=${STEAM_API_KEY}&appid=${appid}`)
+            axios.get(`https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=${STEAM_API_KEY}&appid=${appid}`),
+            axios.get(`https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid=${appid}`)
         ]);
 
         if (achResponse.status === 'rejected') {
@@ -179,18 +180,24 @@ app.get('/api/achievements/:steamid/:appid', checkApiKey, async (req: any, res: 
                 Logger.info(`Private profile detected for ${steamid} on game ${appid}`);
                 return res.json({
                     achievements: { playerstats: { success: false, error: 'Private Profile' } },
-                    schema: schemaResponse.status === 'fulfilled' ? schemaResponse.value.data : { game: { availableGameStats: { achievements: [] } } }
+                    schema: schemaResponse.status === 'fulfilled' ? schemaResponse.value.data : { game: { availableGameStats: { achievements: [] } } },
+                    globalStats: globalStatsResponse.status === 'fulfilled' ? globalStatsResponse.value.data : { achievementpercentages: { achievements: [] } }
                 });
             }
         }
 
         const achievements = achResponse.status === 'fulfilled' ? achResponse.value.data : { playerstats: { achievements: [], success: false } };
         const schema = schemaResponse.status === 'fulfilled' ? schemaResponse.value.data : { game: { availableGameStats: { achievements: [] } } };
+        const globalStats = globalStatsResponse.status === 'fulfilled' ? globalStatsResponse.value.data : { achievementpercentages: { achievements: [] } };
 
-        res.json({ achievements, schema });
+        res.json({ achievements, schema, globalStats });
     } catch (error: any) {
         Logger.error(`Unexpected error in achievements endpoint:`, error.message);
-        res.status(200).json({ achievements: { playerstats: { achievements: [], success: false } }, schema: { game: { availableGameStats: { achievements: [] } } } });
+        res.status(200).json({
+            achievements: { playerstats: { achievements: [], success: false } },
+            schema: { game: { availableGameStats: { achievements: [] } } },
+            globalStats: { achievementpercentages: { achievements: [] } }
+        });
     }
 });
 

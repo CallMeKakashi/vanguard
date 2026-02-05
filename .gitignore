@@ -7,3 +7,8 @@ dist-electron-build
 *.log
 .cache/
 
+models/
+
+ai/venv/
+
+ai/vanguard_ai.db

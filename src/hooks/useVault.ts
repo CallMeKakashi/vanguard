@@ -5,13 +5,13 @@ export interface VaultSearchParams {
     tab?: 'overview' | 'library' | 'stats' | 'discover' | 'blacklist';
     game?: number;
     sort?: 'playtime' | 'name' | 'recency' | 'size' | 'metacritic' | 'release';
-    filter?: 'all' | 'mastered' | 'blacklisted' | 'active' | 'hunter';
+    filter?: 'all' | 'mastered' | 'blacklisted' | 'active';
+    hunter?: number;
 }
 
 export const useVault = (
     games: Game[],
     masteredAppIds: number[],
-    hunterTargets: number[],
     blacklist: number[],
     searchParams: VaultSearchParams,
     updateSearchParams: (updates: Partial<VaultSearchParams>) => void,
@@ -41,8 +41,6 @@ export const useVault = (
             result = result.filter(g => blacklist.includes(g.appid));
         } else if (vaultFilter === 'active') {
             result = result.filter(g => (g.playtime_2weeks || 0) > 0);
-        } else if (vaultFilter === 'hunter') {
-            result = result.filter(g => hunterTargets.includes(g.appid));
         }
 
         // Filter: Genres
@@ -76,7 +74,7 @@ export const useVault = (
 
             return b.playtime_forever - a.playtime_forever;
         });
-    }, [games, searchQuery, vaultFilter, vaultSortBy, masteredAppIds, blacklist, hunterTargets, selectedGenres, gameMetadata]);
+    }, [games, searchQuery, vaultFilter, vaultSortBy, masteredAppIds, blacklist, selectedGenres, gameMetadata]);
 
     const [vaultGrouping, setVaultGrouping] = useState<'none' | 'alpha' | 'status'>('none');
 
@@ -95,7 +93,6 @@ export const useVault = (
             filteredAndSortedGames.forEach(g => {
                 let status = 'Unplayed';
                 if (masteredAppIds.includes(g.appid)) status = 'Mastered';
-                else if (hunterTargets.includes(g.appid)) status = 'Hunter Target';
                 else if (g.playtime_forever > 600) status = 'Veteran'; // >10h
                 else if (g.playtime_forever > 60) status = 'Deploying'; // >1h
 
@@ -105,7 +102,7 @@ export const useVault = (
         }
 
         return groups;
-    }, [filteredAndSortedGames, vaultGrouping, masteredAppIds, hunterTargets]);
+    }, [filteredAndSortedGames, vaultGrouping, masteredAppIds]);
 
     return {
         activeTab,
