@@ -8,13 +8,13 @@ interface GameCardProps {
     isSelected: boolean;
     isBlacklisted: boolean;
     isMastered: boolean;
-    isHunter: boolean;
     playtimeFiltered: string;
     onSelect: () => void;
     onLaunch: () => void;
     onMissionLog: () => void;
     onStats: () => void;
     onToggleBlacklist: () => void;
+    onOpenHunter: () => void;
     style?: React.CSSProperties;
 }
 
@@ -23,13 +23,13 @@ export default function GameCard({
     isSelected,
     isBlacklisted,
     isMastered,
-    isHunter,
     playtimeFiltered,
     onSelect,
     onLaunch,
     onMissionLog,
     onStats,
     onToggleBlacklist,
+    onOpenHunter,
     style
 }: GameCardProps) {
     return (
@@ -47,11 +47,6 @@ export default function GameCard({
                 <div className="absolute top-2 inset-x-2 flex justify-between z-20">
                     {isMastered && (
                         <Badge className="bg-yellow-500/20 text-yellow-500 border-yellow-500/20 backdrop-blur-md text-[8px] font-black px-1.5 py-0">MASTERED</Badge>
-                    )}
-                    {!isMastered && isHunter && (
-                        <Badge className="bg-accent-main/20 text-accent-main border-accent-main/20 backdrop-blur-md flex items-center gap-1 text-[8px] font-black px-1.5 py-0">
-                            <Trophy size={8} /> TARGET
-                        </Badge>
                     )}
                 </div>
                 <img
@@ -120,6 +115,17 @@ export default function GameCard({
                         className={`p-2.5 rounded-lg border transition-all relative z-40 ${isBlacklisted ? 'bg-red-500/20 border-red-500/40 text-red-500' : 'bg-surface border-border-main text-txt-dim hover:text-txt-main hover:border-red-500/30'}`}
                     >
                         <XCircle className="w-3.5 h-3.5" />
+                    </button>
+                    {/* Hunter Mode Direct Access */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenHunter();
+                        }}
+                        className="p-2.5 rounded-lg border border-red-500/40 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all relative z-40"
+                        title="ENTER HUNTER MODE"
+                    >
+                        <Trophy className="w-3.5 h-3.5" />
                     </button>
                 </div>
             </div>

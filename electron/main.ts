@@ -44,6 +44,51 @@ ipcMain.on('install-update', () => {
     autoUpdater.quitAndInstall();
 });
 
+const { spawn } = require('child_process'); // utilityProcess is for Node.js scripts, spawn is better for generic binaries like Python
+
+let aiProcess: any = null;
+
+function startAiServer() {
+    // Determine path to server.py and python executable
+    const isDev = !app.isPackaged || process.env.NODE_ENV === 'development';
+    let scriptPath, pythonPath;
+
+    if (isDev) {
+        scriptPath = path.join(__dirname, '../ai/server.py');
+        // Try to use the venv python if available, else system python
+        const venvPython = path.join(__dirname, '../ai/venv/Scripts/python.exe');
+        pythonPath = require('fs').existsSync(venvPython) ? venvPython : 'python';
+    } else {
+        // In production, 'ai' folder is in resources
+        scriptPath = path.join(process.resourcesPath, 'ai/server.py');
+        // We assume python is in the system path for now, or bundled. 
+        // If we bundled a venv, we'd point to it here.
+        // For this user's request, let's assume system python or check for bundled venv.
+        pythonPath = 'python';
+    }
+
+    console.log('[Main] Initializing AI server...');
+    console.log(`[Main] Python: ${pythonPath}`);
+    console.log(`[Main] Script: ${scriptPath}`);
+
+    aiProcess = spawn(pythonPath, [scriptPath], {
+        stdio: 'inherit',
+        env: { ...process.env, PORT: '8000' } // Ensure explicit port
+    });
+
+    aiProcess.on('spawn', () => {
+        console.log('[Main] AI Server process spawned successfully (Port 8000)');
+    });
+
+    aiProcess.on('error', (err: any) => {
+        console.error('[Main] AI Server process check failed:', err);
+    });
+
+    aiProcess.on('close', (code: number) => {
+        console.log(`[Main] AI Server exited with code ${code}`);
+    });
+}
+
 function startServer() {
     const serverPath = path.join(__dirname, 'server.js');
     console.log('[Main] Initializing tactical server at:', serverPath);
@@ -111,6 +156,7 @@ function createMenu() {
             ]
         },
         {
+            label: 'Help',
             role: 'help',
             submenu: [
                 {
@@ -137,6 +183,7 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
             contextIsolation: true,
+            webviewTag: true // Enable <webview> for in-app browsing
         },
         title: 'Vanguard',
         icon: path.join(__dirname, '../public/logo.png') // Assuming logo exists here
@@ -173,12 +220,16 @@ function createWindow() {
 app.on('ready', () => {
     createMenu();
     startServer();
+    startAiServer();
     createWindow();
 });
 
 app.on('window-all-closed', () => {
     if (serverProcess) {
         serverProcess.kill();
+    }
+    if (aiProcess) {
+        aiProcess.kill();
     }
     if (process.platform !== 'darwin') {
         app.quit();

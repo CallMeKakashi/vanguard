@@ -21,6 +21,7 @@ import FilterPanel from './components/FilterPanel';
 import Sidebar from './components/Sidebar';
 import SortDropdown, { SortOption } from './components/SortDropdown';
 import Skeleton from './components/ui/Skeleton';
+import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 
 
@@ -34,6 +35,7 @@ const Overview = lazy(() => import('./components/Overview'));
 const Discovery = lazy(() => import('./components/Discovery'));
 const Blacklist = lazy(() => import('./components/Blacklist'));
 const Stats = lazy(() => import('./components/Stats'));
+const HunterView = lazy(() => import('./components/HunterView')); // Zen Mode
 
 import { useMastery } from './hooks/useMastery';
 import { useSound } from './hooks/useSound';
@@ -114,7 +116,7 @@ const RootComponent = () => {
 
     // --- Data Fetching ---
     const { profile, games, recentGames, loading, error: steamError } = useSteamData(steamId, API_BASE);
-    const { masteredAppIds, hunterTargets } = useMastery(games, steamId, API_BASE);
+    const { masteredAppIds } = useMastery(games, steamId, API_BASE);
 
     useEffect(() => {
         if (steamKey) {
@@ -230,13 +232,15 @@ const RootComponent = () => {
         setIsScanning(false);
     };
 
-    const vault = useVault(games, masteredAppIds, hunterTargets,
+    const vault = useVault(games, masteredAppIds,
         JSON.parse(localStorage.getItem('vanguard-blacklist') || '[]'),
         search, updateSearchParams,
         selectedGenres, gameMetadata
     );
     const [isMissionLogOpen, setIsMissionLogOpen] = useState(false);
     const [missionLogGame, setMissionLogGame] = useState<{ id: number; name: string } | null>(null);
+    const hunterGameId = search.hunter || null;
+    const hunterGame = useMemo(() => games.find(g => g.appid === hunterGameId) || null, [games, hunterGameId]);
 
     const generateRandomGame = () => {
         const pool = games.filter(g => !blacklist.includes(g.appid));
@@ -379,7 +383,7 @@ const RootComponent = () => {
                                                 <h2 className="text-6xl font-black tracking-tighter text-txt-main italic uppercase leading-none">Asset Repository</h2>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
-                                                {['all', 'mastered', 'active', 'hunter', 'blacklisted'].map((f) => (
+                                                {['all', 'mastered', 'active', 'blacklisted'].map((f) => (
                                                     <button
                                                         key={f}
                                                         onClick={() => { playClick(); vault.setVaultFilter(f as any); }}
@@ -427,13 +431,13 @@ const RootComponent = () => {
                                             vaultGrouping={vault.vaultGrouping}
                                             blacklist={blacklist}
                                             isMastered={isMastered}
-                                            hunterTargets={hunterTargets}
                                             selectedGameId={vault.selectedGameId}
                                             onSelectGame={vault.setSelectedGameId}
                                             onLaunchGame={(id) => window.location.href = `steam://run/${id}`}
                                             onOpenMissionLog={(g) => { setMissionLogGame(g); setIsMissionLogOpen(true); }}
                                             onOpenStats={(id) => { vault.setSelectedGameId(id); vault.setActiveTab('stats'); }}
                                             onToggleBlacklist={toggleBlacklist}
+                                            onOpenHunter={(id) => updateSearchParams({ hunter: id })}
                                             playClick={playClick}
                                         />
                                     </Suspense>
@@ -479,6 +483,17 @@ const RootComponent = () => {
                 </Suspense>
 
                 <Suspense fallback={null}>
+                    {hunterGameId && (
+                        <HunterView
+                            game={hunterGame}
+                            steamId={steamId}
+                            apiBase={API_BASE}
+                            onClose={() => updateSearchParams({ hunter: undefined })}
+                        />
+                    )}
+                </Suspense>
+
+                <Suspense fallback={null}>
                     <CommandPalette
                         open={isCmdOpen}
                         setOpen={setIsCmdOpen}
@@ -511,5 +526,9 @@ const RootComponent = () => {
     );
 };
 
-const App = () => <RouterProvider router={router} />;
+const App = () => (
+    <NotificationProvider>
+        <RouterProvider router={router} />
+    </NotificationProvider>
+);
 export default App;

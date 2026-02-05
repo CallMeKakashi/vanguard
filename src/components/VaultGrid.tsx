@@ -7,13 +7,13 @@ interface VaultGridProps {
     vaultGrouping: 'none' | 'alpha' | 'status';
     blacklist: number[];
     isMastered: (game: Game) => boolean;
-    hunterTargets: number[];
     selectedGameId: number | null;
     onSelectGame: (id: number) => void;
     onLaunchGame: (id: number) => void;
     onOpenMissionLog: (game: { id: number; name: string }) => void;
     onOpenStats: (id: number) => void;
     onToggleBlacklist: (id: number) => void;
+    onOpenHunter: (id: number) => void;
     playClick: () => void;
 }
 
@@ -52,7 +52,6 @@ export default function VaultGrid({ groupedGames, vaultGrouping, ...props }: Vau
                                     isSelected={props.selectedGameId === game.appid}
                                     isBlacklisted={props.blacklist.includes(game.appid)}
                                     isMastered={props.isMastered(game)}
-                                    isHunter={props.hunterTargets.includes(game.appid)}
                                     playtimeFiltered={formatTime(game.playtime_forever)}
                                     onSelect={() => props.onSelectGame(game.appid)}
                                     onLaunch={() => {
@@ -69,6 +68,7 @@ export default function VaultGrid({ groupedGames, vaultGrouping, ...props }: Vau
                                         props.onOpenStats(game.appid);
                                     }}
                                     onToggleBlacklist={() => props.onToggleBlacklist(game.appid)}
+                                    onOpenHunter={() => props.onOpenHunter(game.appid)}
                                 />
                             ))}
                         </div>
