@@ -4,7 +4,7 @@
 
 Vanguard is a high-performance, tactical dashboard for your Steam library. Designed with a military-industrial aesthetic, it transforms your game collection into an operational asset repository, providing advanced filtering, squadron tracking, and mission logging capabilities.
 
-![Vanguard Dashboard UI](https://github.com/Start-Automating/vanguard/assets/placeholder-image-url.png)
+![Vanguard Dashboard UI](docs/dashboard-screenshot.png)
 
 ## Key Features
 
