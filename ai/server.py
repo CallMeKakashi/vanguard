@@ -1,4 +1,3 @@
-
 import os
 import sys
 import glob
@@ -178,6 +177,21 @@ def chat_completions(request: ChatCompletionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+def web_search(query: str):
+    """
+    Search the web for real-time information about games, achievements, mechanics, or locations.
+    Use this when you need current data from wikis or walkthroughs.
+    """
+    from ddgs import DDGS
+    try:
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=5))
+            if not results:
+                return "No results found."
+            return "\n\n".join([f"Source: {r['title']}\n{r['body']}" for r in results])
+    except Exception as e:
+        return f"Search error: {e}"
+
 class GuideRequest(BaseModel):
     game: str
     achievement: str
@@ -189,62 +203,59 @@ def generate_guide(request: GuideRequest):
     
     print(f"[AI Server] Generating guide for: {request.game} - {request.achievement}")
     
-    # 1. Search for context (RAG)
-    search_context = ""
     try:
-        from ddgs import DDGS
-        with DDGS() as ddgs:
-            query = f"{request.game} {request.achievement} achievement guide"
-            results = list(ddgs.text(query, max_results=3))
-            search_context = "\n\n".join([f"Source: {r['title']}\n{r['body']}" for r in results])
-        print(f"[AI Server] Retreived search context for '{request.achievement}'")
-    except Exception as se:
-        print(f"[AI Server] Search failed: {se}")
-
-    try:
-        # 2. Use the Agent with the retrieved context
-        from praisonaiagents import Agent
+        # Agent with explicit Task
+        from praisonaiagents import Agent, Task
         
-        # Configure the agent to use local LLM
         port = int(os.getenv("PORT", 8000))
         os.environ["OPENAI_BASE_URL"] = f"http://localhost:{port}/v1"
         os.environ["OPENAI_API_KEY"] = "not-needed"
         os.environ["OPENAI_MODEL_NAME"] = "local-model"
         
-        prompt = f"""You are a veteran gaming achievement hunter. 
-Using the following research context, write a professional tactical guide for '{request.achievement}' in '{request.game}'.
-
-RESEARCH CONTEXT:
-{search_context if search_context else "No real-time data found. Use your internal knowledge."}
-
-GUIDE FORMAT:
-- Use # for the main title.
-- Use ## for sections like "Requirements", "Strategy", and "Execution".
-- Use bold text for key items, locations, or boss names.
-- Use numbered lists for step-by-step instructions.
-- Keep it concise but professional.
-
-Write the guide in Markdown format."""
+        guide_task = Task(
+            description=f"Research and write a professional tactical guide for '{request.achievement}' in '{request.game}'. Use tools to find latest wiki data.",
+            expected_output="A complete step-by-step guide in Markdown format with headers and bold text.",
+            name="generate_guide"
+        )
 
         guide_agent = Agent(
             name="Tactical Specialist",
             role="Gaming Expert",
-            goal=f"Write the best guide for {request.achievement}.",
-            backstory="You synthesize wiki data into actionable steps.",
-            model="openai/local-model"
+            goal=f"Provide high-quality tactical advice for {request.game}.",
+            backstory="You synthesize wiki data into actionable steps. You search when you need more data.",
+            model="openai/local-model",
+            tools=[web_search],
+            tasks=[guide_task]
         )
         guide_agent.verbose = True
         
-        # We pass the prompt directly to start() to give the agent its instructions
         print(f"[AI Server] Starting Agentic Synthesis...")
-        result = guide_agent.start(prompt)
+        # PraisonAI Agents usually run via start() which processes their tasks
+        result = guide_agent.start()
+        print(f"DEBUG: Raw result object: {result}")
         
-        return {"guide": str(result)}
+        # Extract content from result
+        guide_content = ""
+        if hasattr(result, 'content'):
+            guide_content = result.content
+        elif isinstance(result, str):
+            guide_content = result
+        else:
+            guide_content = str(result)
+            
+        if not guide_content.strip():
+            print("[AI Server] Agent returned empty content. Attempting raw result extraction...")
+            # Some versions return a list of task results
+            if isinstance(result, list) and len(result) > 0:
+                guide_content = str(result[0])
+
+        return {"guide": guide_content}
         
     except Exception as e:
         print(f"[AI Server] Agent failed: {e}. Falling back to direct LLM.")
         try:
-            # Direct LLM fallback with context
+            # Fallback (manual search for fallback still okay)
+            search_context = web_search(f"{request.game} {request.achievement} guide")
             system_prompt = "You are a gaming expert. Use the provided context to write a guide."
             user_prompt = f"GAME: {request.game}\nACHIEVEMENT: {request.achievement}\n\nCONTEXT:\n{search_context}\n\nWrite a step-by-step guide."
             
@@ -302,6 +313,21 @@ def list_messages(session_id: str):
     conn.close()
     return [dict(row) for row in rows]
 
+@app.delete("/expert/sessions/{session_id}")
+def delete_session(session_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
+        cursor.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+    return {"status": "ok"}
+
 @app.post("/ask_expert")
 def ask_expert(request: ExpertRequest):
     if not llm:
@@ -328,65 +354,64 @@ def ask_expert(request: ExpertRequest):
     
     conn.commit()
 
-    # 1. Search for context (RAG)
-    search_context = ""
     try:
-        from ddgs import DDGS
-        with DDGS() as ddgs:
-            query = f"{request.game} {request.question} guide walkthrough"
-            results = list(ddgs.text(query, max_results=4))
-            search_context = "\n\n".join([f"Source: {r['title']}\n{r['body']}" for r in results])
-        print(f"[AI Server] Retreived search context for query")
-    except Exception as se:
-        print(f"[AI Server] Search failed: {se}")
-
-    try:
-        # 2. Use the Agent
-        from praisonaiagents import Agent
+        # 2. Use the Agent with explicit Task
+        from praisonaiagents import Agent, Task
         
         port = int(os.getenv("PORT", 8000))
         os.environ["OPENAI_BASE_URL"] = f"http://localhost:{port}/v1"
         os.environ["OPENAI_API_KEY"] = "not-needed"
         os.environ["OPENAI_MODEL_NAME"] = "local-model"
         
-        prompt = f"""You are an Expert Gaming AI. 
-Answer the user's question about the game '{request.game}'.
-
-USER QUESTION:
-{request.question}
-
-RESEARCH CONTEXT:
-{search_context if search_context else "No real-time data found. Use your internal knowledge."}
-
-GUIDELINES:
-- Provide exact locations, stats, or steps.
-- Use Markdown formatting (headers, bolding).
-- If information is missing, state what you know and suggest alternatives.
-- Keep it tactical and immersive."""
+        expert_task = Task(
+            description=f"Answer the user's question about the game '{request.game}'. Question: {request.question}",
+            expected_output="A detailed tactical answer in Markdown with headers and bold text.",
+            name="expert_query"
+        )
 
         agent = Agent(
             name="Combat Intelligence",
             role="Tactical Expert",
             goal=f"Solve the user's inquiry about {request.game}.",
-            backstory="You are a data-driven gaming strategist with access to global wikis.",
-            model="openai/local-model"
+            backstory="You are a data-driven gaming strategist. You search for wiki data when needed.",
+            model="openai/local-model",
+            tools=[web_search],
+            tasks=[expert_task]
         )
         agent.verbose = True
         
         print(f"[AI Server] Starting Expert Analysis...")
-        result = str(agent.start(prompt))
+        result = agent.start()
+        print(f"DEBUG: Raw expert result object: {result}")
+        
+        # Extract content
+        answer_text = ""
+        if hasattr(result, 'content'):
+            answer_text = result.content
+        elif isinstance(result, str):
+            answer_text = result
+        else:
+            answer_text = str(result)
+            
+        if not answer_text.strip() and isinstance(result, list) and len(result) > 0:
+            answer_text = str(result[0])
+            
+        if not answer_text.strip():
+            print("[AI Server] Warning: Empty answer returned from expert agent.")
         
         # Save AI message
         cursor.execute("INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)",
-                       (request.session_id, "assistant", result))
+                       (request.session_id, "assistant", answer_text))
         conn.commit()
         conn.close()
         
-        return {"answer": result}
+        return {"answer": answer_text}
         
     except Exception as e:
         print(f"[AI Server] Expert failed: {e}. Falling back to direct LLM.")
         try:
+            # Fallback search
+            search_context = web_search(f"{request.game} {request.question}")
             system_prompt = f"You are a gaming expert for {request.game}. Use the provided context."
             user_prompt = f"QUESTION: {request.question}\n\nCONTEXT:\n{search_context}\n\nProvide a detailed answer in Markdown."
             

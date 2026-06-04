@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, Brain, ExternalLink, History, Loader2, MessageSquare, Plus, StickyNote, Trophy, X, Youtube } from 'lucide-react';
+import { Bot, Brain, ExternalLink, History, Loader2, MessageSquare, Plus, StickyNote, Trash2, Trophy, X, Youtube } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -82,8 +82,8 @@ const GuideOverlay = ({ game, activeGuide, onClose }: { game: Game; activeGuide:
                                 </div>
                             )}
                         </div>
-                    </div >
-                </div >
+                    </div>
+                </div>
 
                 {/* Right Column: AI & Notes */}
                 <div className="flex flex-col gap-6 h-full overflow-hidden">
@@ -123,7 +123,7 @@ const GuideOverlay = ({ game, activeGuide, onClose }: { game: Game; activeGuide:
                     </div>
 
                     {/* Tactical Notes Section */}
-                    < div className="h-1/3 flex flex-col bg-[#0f0f13] rounded-2xl border border-white/10 overflow-hidden shadow-2xl shrink-0" >
+                    <div className="h-1/3 flex flex-col bg-[#0f0f13] rounded-2xl border border-white/10 overflow-hidden shadow-2xl shrink-0">
                         <div className="bg-white/5 p-4 flex items-center gap-3 border-b border-white/5">
                             <StickyNote className="w-4 h-4 text-yellow-500" />
                             <span className="text-xs font-bold font-mono uppercase tracking-widest text-slate-300">Tactical Notes</span>
@@ -140,10 +140,10 @@ const GuideOverlay = ({ game, activeGuide, onClose }: { game: Game; activeGuide:
                         <div className="p-3 bg-white/5 border-t border-white/5 text-[10px] text-center text-slate-500 uppercase tracking-widest font-mono">
                             Auto-saved to Local Storage
                         </div>
-                    </div >
+                    </div>
                 </div>
-            </div >
-        </motion.div >
+            </div>
+        </motion.div>
     );
 };
 
@@ -209,6 +209,27 @@ const ExpertChat = ({ game }: { game: Game }) => {
         const id = crypto.randomUUID();
         setCurrentSessionId(id);
         setMessages([]);
+    };
+
+    const deleteSession = async (e: React.MouseEvent, sid: string) => {
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this tactical session?")) return;
+
+        try {
+            await fetch(`http://localhost:8000/expert/sessions/${sid}`, { method: 'DELETE' });
+            setSessions(prev => prev.filter(s => s.id !== sid));
+            if (currentSessionId === sid) {
+                const remaining = sessions.filter(s => s.id !== sid);
+                if (remaining.length > 0) {
+                    setCurrentSessionId(remaining[0].id);
+                } else {
+                    setCurrentSessionId(null);
+                    setMessages([]);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to delete session", e);
+        }
     };
 
     const sendMessage = async () => {
@@ -280,14 +301,22 @@ const ExpertChat = ({ game }: { game: Game }) => {
                         <button
                             key={s.id}
                             onClick={() => setCurrentSessionId(s.id)}
-                            className={`w-full flex flex-col p-3 rounded-lg text-left transition-all group ${currentSessionId === s.id
+                            className={`w-full flex flex-col p-3 rounded-lg text-left transition-all group relative ${currentSessionId === s.id
                                 ? 'bg-cyan-500/10 border border-cyan-500/30'
                                 : 'hover:bg-white/5 border border-transparent'
                                 }`}
                         >
-                            <span className={`text-[11px] font-bold truncate ${currentSessionId === s.id ? 'text-cyan-400' : 'text-slate-300'}`}>
-                                {s.title}
-                            </span>
+                            <div className="flex items-start justify-between gap-2">
+                                <span className={`text-[11px] font-bold truncate ${currentSessionId === s.id ? 'text-cyan-400' : 'text-slate-300'}`}>
+                                    {s.title}
+                                </span>
+                                <button
+                                    onClick={(e) => deleteSession(e, s.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 hover:text-red-500 rounded transition-all"
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                </button>
+                            </div>
                             <span className="text-[9px] font-mono text-slate-600 mt-1 uppercase">
                                 {new Date(s.created_at).toLocaleDateString()}
                             </span>
